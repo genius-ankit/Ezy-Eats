@@ -6,8 +6,7 @@ export default function Home() {
     <View style={styles.container}>
       <Text style={styles.title}>Welcome to EzyEats</Text>
       <View style={styles.buttonContainer}>
-        <Link href="/menu" style={styles.link}>View Menu</Link>
-        <Link href="/orders" style={styles.link}>My Orders</Link>
+        <Link href="/(tabs)/scan" style={styles.link}>Scan QR Code</Link>
       </View>
     </View>
   );
@@ -34,5 +33,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     color: 'white',
     textAlign: 'center',
+    width: 200,
   },
 }); 

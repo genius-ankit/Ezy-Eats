@@ -1,57 +1,76 @@
 import React, { createContext, useContext, useState } from 'react';
 
-interface CartItem {
-  id: string;
+type CartItem = {
+  id: number;
   name: string;
-  price: number;
+  price: string;
   quantity: number;
-}
+  canteenId: string;
+  menuId: string;
+};
 
-interface CartContextType {
+type CartContextType = {
   items: CartItem[];
-  addItem: (item: CartItem) => void;
-  removeItem: (id: string) => void;
+  addItem: (item: Omit<CartItem, 'quantity'>) => void;
+  removeItem: (itemId: number) => void;
+  updateQuantity: (itemId: number, quantity: number) => void;
   clearCart: () => void;
-}
+  total: string;
+};
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addItem = (item: CartItem) => {
-    setItems((currentItems) => {
-      const existingItem = currentItems.find((i) => i.id === item.id);
+  const addItem = (newItem: Omit<CartItem, 'quantity'>) => {
+    setItems(currentItems => {
+      const existingItem = currentItems.find(item => item.id === newItem.id);
       if (existingItem) {
-        return currentItems.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+        return currentItems.map(item =>
+          item.id === newItem.id 
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
         );
       }
-      return [...currentItems, { ...item, quantity: 1 }];
+      return [...currentItems, { ...newItem, quantity: 1 }];
     });
   };
 
-  const removeItem = (id: string) => {
-    setItems((currentItems) =>
-      currentItems.filter((item) => item.id !== id)
+  const removeItem = (itemId: number) => {
+    setItems(items => items.filter(item => item.id !== itemId));
+  };
+
+  const updateQuantity = (itemId: number, quantity: number) => {
+    setItems(items => 
+      items.map(item => 
+        item.id === itemId ? { ...item, quantity } : item
+      ).filter(item => item.quantity > 0)
     );
   };
 
-  const clearCart = () => {
-    setItems([]);
-  };
+  const clearCart = () => setItems([]);
+
+  const total = items
+    .reduce((sum, item) => sum + (parseFloat(item.price.replace('$', '')) * item.quantity), 0)
+    .toFixed(2);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, clearCart }}>
+    <CartContext.Provider value={{ 
+      items, 
+      addItem, 
+      removeItem, 
+      updateQuantity, 
+      clearCart, 
+      total 
+    }}>
       {children}
     </CartContext.Provider>
   );
 }
 
-export function useCart() {
+export const useCart = () => {
   const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
+  if (!context) throw new Error('useCart must be used within CartProvider');
   return context;
-} 
+}; 
