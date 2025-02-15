@@ -35,6 +35,13 @@ export default function RootLayout() {
             headerBackTitle: 'Back to Cart'
           }} 
         />
+        <Stack.Screen 
+          name="admin/generate-qr" 
+          options={{ 
+            title: 'Generate QR Codes',
+            presentation: 'modal'
+          }} 
+        />
       </Stack>
     </CartProvider>
   );

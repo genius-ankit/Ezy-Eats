@@ -1,5 +1,8 @@
 import { StyleSheet, View, Text } from 'react-native';
 import QRScanner from '@/components/QRScanner';
+import { useEffect } from 'react';
+import { router } from 'expo-router';
+import { BarCodeScanner } from 'expo-barcode-scanner';
 
 export default function ScanScreen() {
   return (
