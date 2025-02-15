@@ -8,17 +8,17 @@ const PAYMENT_METHODS = [
   {
     id: 'upi',
     name: 'UPI',
-    icon: 'payment',
+    icon: 'account-balance' as const,
   },
   {
     id: 'card',
     name: 'Credit/Debit Card',
-    icon: 'credit-card',
+    icon: 'credit-card' as const,
   },
   {
     id: 'cod',
     name: 'Cash on Delivery',
-    icon: 'local-atm',
+    icon: 'payments' as const,
   },
 ];
 
