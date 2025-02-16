@@ -1,19 +1,22 @@
 import React, { createContext, useContext, useState } from 'react';
 
-type CartItem = {
-  id: number;
+export type CartItem = {
+  id: string;
   name: string;
-  price: string;
+  price: number;
   quantity: number;
   canteenId: string;
   menuId: string;
+  description?: string;
+  imageUrl?: string;
+  isVeg?: boolean;
 };
 
 type CartContextType = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
-  removeItem: (itemId: number) => void;
-  updateQuantity: (itemId: number, quantity: number) => void;
+  removeItem: (itemId: string) => void;
+  updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   total: string;
 };
@@ -37,11 +40,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const removeItem = (itemId: number) => {
+  const removeItem = (itemId: string) => {
     setItems(items => items.filter(item => item.id !== itemId));
   };
 
-  const updateQuantity = (itemId: number, quantity: number) => {
+  const updateQuantity = (itemId: string, quantity: number) => {
     setItems(items => 
       items.map(item => 
         item.id === itemId ? { ...item, quantity } : item
@@ -52,7 +55,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clearCart = () => setItems([]);
 
   const total = items
-    .reduce((sum, item) => sum + (parseFloat(item.price.replace('$', '')) * item.quantity), 0)
+    .reduce((sum, item) => sum + (item.price * item.quantity), 0)
     .toFixed(2);
 
   return (

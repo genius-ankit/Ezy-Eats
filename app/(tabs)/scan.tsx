@@ -3,8 +3,65 @@ import QRScanner from '@/components/QRScanner';
 import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { BarCodeScanner } from 'expo-barcode-scanner';
+import { Alert } from 'react-native';
+import { useVendor } from '@/context/VendorContext';
+
+interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  description?: string;
+  imageUrl?: string;
+  isVeg?: boolean;
+  available: boolean;
+}
+
+interface QRData {
+  type: string;
+  canteenId: string;
+  menuId: string;
+  canteenName: string;
+  items: MenuItem[];
+}
 
 export default function ScanScreen() {
+  const { getMenuItems, loadMenuItems } = useVendor();
+
+  const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    try {
+      console.log('Raw QR code data:', data);
+      const parsedData = JSON.parse(data) as QRData;
+      console.log('Parsed QR data:', parsedData);
+
+      if (!parsedData.type || !parsedData.canteenId) {
+        console.log('Invalid QR data structure:', parsedData);
+        Alert.alert('Error', 'Invalid QR code format. Missing required data.');
+        return;
+      }
+
+      // Fetch menu items when QR is scanned
+      await loadMenuItems();
+      const menuItems = await getMenuItems(parsedData.canteenId);
+      
+      if (!menuItems || menuItems.length === 0) {
+        Alert.alert('No Menu Items', 'This canteen has not added any menu items yet.');
+        return;
+      }
+
+      router.push({
+        pathname: '/menu/[canteenId]/[menuId]',
+        params: {
+          canteenId: parsedData.canteenId,
+          menuId: parsedData.menuId,
+          menuData: JSON.stringify(menuItems)
+        }
+      });
+    } catch (error) {
+      console.error('Error processing QR code:', error);
+      Alert.alert('Error', 'Invalid QR code format. Please try again.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Instructions Section */}

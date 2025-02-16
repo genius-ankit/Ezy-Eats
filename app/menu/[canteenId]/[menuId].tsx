@@ -1,170 +1,170 @@
 import { useLocalSearchParams, router } from 'expo-router';
-import { View, Text, StyleSheet, ScrollView, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { useVendor } from '@/context/VendorContext';
+import type { CartItem } from '../../../context/CartContext';
 
-// Add these types at the top
-type MenuItem = {
-  id: number;
+interface MenuItem {
+  id: string;
   name: string;
-  price: string;
-  description: string;
-  imageUrl: string;
-  isVeg: boolean;
-};
+  price: number;
+  description?: string;
+  imageUrl?: string;
+  isVeg?: boolean;
+  available: boolean;
+}
 
-type Menu = {
-  name: string;
-  items: MenuItem[];
-};
-
-type CanteenData = {
-  name: string;
-  [menuId: string]: Menu | string;  // Allow both Menu objects and string (for name)
-};
-
-type MenuData = {
-  [canteenId: string]: CanteenData;
-};
-
-// Update MOCK_MENU with the type
-const MOCK_MENU: MenuData = {
-  canteen1: {
-    name: "Main Cafeteria",
-    menu123: {
-      name: "Vegetarian Special Menu",
-      items: [
-        { 
-          id: 1, 
-          name: "Margherita Pizza", 
-          price: "$8.99", 
-          description: "Fresh tomatoes, mozzarella, basil",
-          imageUrl: "https://images.unsplash.com/photo-1604382355076-af4b0eb60143?w=500",
-          isVeg: true
-        },
-        { 
-          id: 2, 
-          name: "Garden Salad", 
-          price: "$4.99", 
-          description: "Mixed greens, cherry tomatoes, cucumber",
-          imageUrl: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500",
-          isVeg: true
-        },
-        { 
-          id: 3, 
-          name: "Veggie Pasta", 
-          price: "$7.99", 
-          description: "Penne with mixed vegetables in tomato sauce",
-          imageUrl: "https://images.unsplash.com/photo-1516685018646-549198525c1b?w=500",
-          isVeg: true
-        },
-        { 
-          id: 4, 
-          name: "Mushroom Risotto", 
-          price: "$9.99", 
-          description: "Creamy Italian rice with mushrooms",
-          imageUrl: "https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=500",
-          isVeg: true
-        },
-        { 
-          id: 5, 
-          name: "Paneer Tikka", 
-          price: "$10.99", 
-          description: "Grilled cottage cheese with Indian spices",
-          imageUrl: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=500",
-          isVeg: true
-        }
-      ]
-    }
+const getImageUrl = (url: string) => {
+  if (!url) return null;
+  // If it's a full base64 image and not too long
+  if (url.startsWith('data:image') && url.length < 1000) {
+    return { uri: url };
   }
+  // Return null for truncated or invalid images
+  return null;
 };
 
 export default function MenuScreen() {
-  const { canteenId, menuId } = useLocalSearchParams<{
+  const { canteenId, menuId, menuData } = useLocalSearchParams<{
     canteenId: string;
     menuId: string;
+    menuData: string;
   }>();
   const { addItem, updateQuantity, items } = useCart();
-  const canteen = MOCK_MENU[canteenId as keyof typeof MOCK_MENU];
-  const menu = typeof canteen?.[menuId] === 'object' ? canteen?.[menuId] as Menu : undefined;
+  const { user } = useAuth();
+  const { getMenuItems } = useVendor();
 
-  const getItemQuantity = (itemId: number) => {
-    const cartItem = items.find(item => item.id === itemId);
-    return cartItem?.quantity || 0;
-  };
+  console.log('Received menuData:', menuData);
+  
+  let parsedMenuItems: MenuItem[] = [];
+  
+  try {
+    if (menuData) {
+      parsedMenuItems = JSON.parse(menuData);
+      console.log('Successfully parsed menu items:', parsedMenuItems);
+    }
+  } catch (error) {
+    console.error('Error parsing menu data:', error);
+  }
 
-  if (!menu) {
+  if (!parsedMenuItems || parsedMenuItems.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.error}>Menu not found</Text>
+        <Text style={styles.error}>No menu items found</Text>
+        <Text style={styles.errorDetail}>
+          {menuData ? 'Error parsing menu data' : 'No menu data received'}
+        </Text>
+        <Text style={styles.errorDetail}>
+          Raw menu data: {menuData || 'undefined'}
+        </Text>
       </View>
     );
   }
 
+  const getItemQuantity = (itemId: string) => {
+    return items.find((item: CartItem) => item.id === itemId)?.quantity || 0;
+  };
+
   return (
     <View style={styles.mainContainer}>
-      <ScrollView 
-        style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <Text style={styles.canteenName}>{canteen.name}</Text>
-        <Text style={styles.title}>{menu.name}</Text>
-        
-        {menu.items.map((item) => {
+      {/* Header Section */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <MaterialIcons name="restaurant-menu" size={32} color="#2E8B57" />
+          <Text style={styles.canteenName}>Canteen {canteenId}</Text>
+        </View>
+      </View>
+
+      <ScrollView style={styles.container}>
+        {/* Menu Items */}
+        {parsedMenuItems.map((item: MenuItem) => {
           const quantity = getItemQuantity(item.id);
+          const imageSource = item.imageUrl ? getImageUrl(item.imageUrl) : null;
           
           return (
-            <Pressable 
-              key={item.id} 
-              style={styles.menuItem}
-            >
-              <Image 
-                source={{ uri: item.imageUrl }} 
-                style={styles.itemImage}
-              />
+            <View key={item.id} style={styles.menuItem}>
               <View style={styles.itemContent}>
-                <View style={styles.itemHeader}>
-                  <View style={[styles.nameContainer, { flex: 1 }]}>
-                    <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                    <View style={styles.vegBadge}>
-                      <MaterialIcons name="eco" size={16} color="green" />
-                    </View>
+                {imageSource ? (
+                  <Image 
+                    source={imageSource} 
+                    style={styles.itemImage}
+                    onError={(error) => console.log('Image loading error:', error.nativeEvent.error)}
+                  />
+                ) : (
+                  <View style={[styles.itemImage, styles.placeholderImage]}>
+                    <MaterialIcons name="restaurant" size={32} color="#ccc" />
                   </View>
-                  <Text style={styles.itemPrice}>{item.price}</Text>
-                </View>
-                <Text style={styles.itemDescription} numberOfLines={2}>{item.description}</Text>
-                
-                <View style={styles.quantityContainer}>
-                  {quantity > 0 ? (
-                    <View style={styles.quantityControls}>
-                      <Pressable
-                        style={styles.quantityButton}
-                        onPress={() => updateQuantity(item.id, quantity - 1)}
-                      >
-                        <Text style={styles.quantityButtonText}>-</Text>
-                      </Pressable>
-                      <Text style={styles.quantity}>{quantity}</Text>
-                      <Pressable
-                        style={styles.quantityButton}
-                        onPress={() => updateQuantity(item.id, quantity + 1)}
-                      >
-                        <Text style={styles.quantityButtonText}>+</Text>
-                      </Pressable>
+                )}
+                <View style={styles.itemInfo}>
+                  <View style={styles.itemHeader}>
+                    <View style={styles.nameContainer}>
+                      <Text style={styles.itemName}>{item.name}</Text>
+                      {item.isVeg !== undefined && (
+                        <View style={[styles.vegBadge, 
+                          { backgroundColor: item.isVeg ? '#E8F5E9' : '#FFEBEE' }
+                        ]}>
+                          <MaterialIcons 
+                            name="circle" 
+                            size={12} 
+                            color={item.isVeg ? '#2E8B57' : '#FF4444'} 
+                          />
+                          <Text style={[styles.vegText, 
+                            { color: item.isVeg ? '#2E8B57' : '#FF4444' }
+                          ]}>
+                            {item.isVeg ? 'Veg' : 'Non-Veg'}
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                  ) : (
-                    <Pressable 
-                      style={styles.addButton}
-                      onPress={() => addItem({ ...item, canteenId, menuId })}
-                    >
-                      <Text style={styles.addButtonText}>Add to Cart</Text>
-                    </Pressable>
+                    <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
+                  </View>
+                  {item.description && (
+                    <Text style={styles.itemDescription}>{item.description}</Text>
                   )}
+                  
+                  <View style={styles.quantityContainer}>
+                    {quantity > 0 ? (
+                      <View style={styles.quantityControls}>
+                        <Pressable
+                          style={styles.quantityButton}
+                          onPress={() => updateQuantity(item.id, quantity - 1)}
+                        >
+                          <MaterialIcons name="remove" size={20} color="#2E8B57" />
+                        </Pressable>
+                        <Text style={styles.quantity}>{quantity}</Text>
+                        <Pressable
+                          style={styles.quantityButton}
+                          onPress={() => updateQuantity(item.id, quantity + 1)}
+                        >
+                          <MaterialIcons name="add" size={20} color="#2E8B57" />
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <Pressable 
+                        style={styles.addButton}
+                        onPress={() => addItem({
+                          id: item.id,
+                          name: item.name,
+                          price: item.price,
+                          canteenId: canteenId,
+                          menuId: menuId,
+                          description: item.description,
+                          imageUrl: item.imageUrl,
+                          isVeg: item.isVeg
+                        })}
+                      >
+                        <Text style={styles.addButtonText}>Add</Text>
+                        <MaterialIcons name="add-shopping-cart" size={20} color="white" />
+                      </Pressable>
+                    )}
+                  </View>
                 </View>
               </View>
-            </Pressable>
+            </View>
           );
         })}
-        <View style={styles.bottomSpacing} />
       </ScrollView>
 
       {items.length > 0 && (
@@ -174,7 +174,9 @@ export default function MenuScreen() {
             onPress={() => router.push('/cart')}
           >
             <MaterialIcons name="shopping-cart" size={24} color="white" />
-            <Text style={styles.cartText}>View Cart ({items.length} items)</Text>
+            <Text style={styles.cartText}>
+              View Cart ({items.length} items)
+            </Text>
           </Pressable>
         </View>
       )}
@@ -185,102 +187,153 @@ export default function MenuScreen() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
     backgroundColor: '#fff',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  canteenName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
   },
   container: {
     flex: 1,
   },
-  scrollContent: {
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
   menuItem: {
-    flexDirection: 'row',
-    padding: 16,
-    marginBottom: 12,
     backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginVertical: 8,
     borderRadius: 12,
-    elevation: 3,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    overflow: 'hidden',
+  },
+  itemContent: {
+    flexDirection: 'row',
+    padding: 12,
   },
   itemImage: {
     width: 100,
     height: 100,
     borderRadius: 8,
-    marginRight: 16,
+    backgroundColor: '#f5f5f5',
   },
-  itemContent: {
+  itemInfo: {
     flex: 1,
-    minWidth: 0,
+    marginLeft: 12,
   },
   itemHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    alignItems: 'flex-start',
+  },
+  nameContainer: {
+    flex: 1,
+    marginRight: 8,
   },
   itemName: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    flex: 1,
+    marginBottom: 4,
+  },
+  vegBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  vegText: {
+    fontSize: 12,
+    marginLeft: 4,
+    fontWeight: '500',
   },
   itemPrice: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: '600',
     color: '#2E8B57',
-    minWidth: 60,
-    textAlign: 'right',
   },
   itemDescription: {
-    color: '#666',
     fontSize: 14,
-    marginBottom: 12,
+    color: '#666',
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  quantityContainer: {
+    marginTop: 'auto',
+  },
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2E8B57',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  quantityButton: {
+    padding: 8,
+  },
+  quantity: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    paddingHorizontal: 12,
   },
   addButton: {
-    backgroundColor: '#007AFF',
-    padding: 8,
-    borderRadius: 6,
+    backgroundColor: '#2E8B57',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 8,
   },
   addButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
     color: 'white',
-    fontWeight: '500',
   },
   cartButtonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#eee',
   },
   cartButton: {
     backgroundColor: '#2E8B57',
+    borderRadius: 8,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    gap: 8,
   },
   cartText: {
-    color: 'white',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
+    color: 'white',
+    marginLeft: 8,
   },
   error: {
     fontSize: 18,
@@ -288,51 +341,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
-  nameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  vegBadge: {
-    backgroundColor: '#E8F5E9',
-    padding: 4,
-    borderRadius: 4,
-  },
-  quantityContainer: {
-    marginTop: 8,
-  },
-  quantityControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    gap: 12,
-  },
-  quantityButton: {
-    backgroundColor: '#007AFF',
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quantityButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  quantity: {
-    fontSize: 16,
-    fontWeight: '600',
-    minWidth: 20,
-    textAlign: 'center',
-  },
-  bottomSpacing: {
-    height: 80,
-  },
-  canteenName: {
-    fontSize: 18,
+  errorDetail: {
+    fontSize: 14,
     color: '#666',
     textAlign: 'center',
-    marginBottom: 8,
+    marginTop: 8,
+  },
+  placeholderImage: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
   },
 }); 

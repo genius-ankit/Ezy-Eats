@@ -36,14 +36,6 @@ export default function TabLayout() {
         }}
         redirect={true}
       />
-      <Tabs.Screen
-        name="scan"
-        options={{
-          title: 'Scan QR',
-          headerTitle: 'Scan QR Code',
-          tabBarIcon: ({ color }) => <MaterialIcons name="qr-code-scanner" size={28} color={color} />,
-        }}
-      />
     </Tabs>
   );
 }

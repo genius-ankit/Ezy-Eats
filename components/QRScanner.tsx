@@ -2,59 +2,69 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { router } from 'expo-router';
+import { useVendor } from '@/context/VendorContext';
+import { imageHelper } from '@/utils/imageHelper';
 
 export default function QRScanner() {
+  const { getMenuItems, loadMenuItems } = useVendor();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
 
   useEffect(() => {
-    const getBarCodeScannerPermissions = async () => {
+    const getCameraPermissions = async () => {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
       setHasPermission(status === 'granted');
     };
 
-    getBarCodeScannerPermissions();
+    getCameraPermissions();
   }, []);
 
-  const handleBarCodeScanned = ({ type, data }: { type: number; data: string }) => {
+  const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
     setScanned(true);
     try {
-      let canteenId, menuId;
+      console.log('Raw scanned data:', data);
+      const scannedData = JSON.parse(data);
+      console.log('Parsed QR data:', scannedData);
 
-      // Check if it's a URL or direct text
-      if (data.startsWith('http')) {
-        // Extract the last part of the URL
-        const url = new URL(data);
-        const path = url.pathname.split('/').filter(Boolean);
-        const lastSegment = path[path.length - 1];
+      if (scannedData.type === 'menu' && scannedData.canteenId) {
+        await loadMenuItems(); // Reload menu items
+        const menuItems = await getMenuItems(scannedData.canteenId);
         
-        // Check if the last segment contains the format we want
-        if (lastSegment && lastSegment.includes(':')) {
-          [canteenId, menuId] = lastSegment.split(':');
-        } else {
-          throw new Error('Invalid URL format');
+        if (!menuItems || menuItems.length === 0) {
+          alert('No menu items found for this canteen');
+          return;
         }
-      } else if (data.includes(':')) {
-        // Direct text format (canteenId:menuId)
-        [canteenId, menuId] = data.split(':');
-      } else {
-        throw new Error('Invalid format');
-      }
 
-      if (canteenId && menuId) {
-        router.push(`/menu/${canteenId}/${menuId}`);
+        // Load images for menu items
+        const itemsWithImages = await Promise.all(
+          menuItems.map(async (item) => {
+            if (item.imageUrl) {
+              const imageUri = await imageHelper.getImageUri(scannedData.canteenId, item.id);
+              return { ...item, imageUrl: imageUri };
+            }
+            return item;
+          })
+        );
+
+        router.push({
+          pathname: '/menu/[canteenId]/[menuId]',
+          params: {
+            canteenId: scannedData.canteenId,
+            menuId: scannedData.menuId,
+            menuData: JSON.stringify(itemsWithImages)
+          }
+        });
       } else {
-        throw new Error('Missing canteenId or menuId');
+        throw new Error('Invalid QR format');
       }
     } catch (error) {
       console.error('Error parsing QR code:', error);
-      alert('Invalid QR code format. Please use format: canteenId:menuId');
+      alert('Invalid QR code format');
+    } finally {
+      setTimeout(() => {
+        setScanned(false);
+      }, 2000);
     }
-    
-    // Reset scanner after 2 seconds
-    setTimeout(() => {
-      setScanned(false);
-    }, 2000);
   };
 
   if (hasPermission === null || hasPermission === false) {
@@ -64,8 +74,8 @@ export default function QRScanner() {
   return (
     <View style={styles.container}>
       <BarCodeScanner
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
         style={StyleSheet.absoluteFillObject}
+        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
       />
     </View>
   );
