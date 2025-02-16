@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1062713318683",
+    "project_id": "eazy-eats-b687a",
+    "storage_bucket": "eazy-eats-b687a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062713318683:android:84bff4aff64c38801fc7be",
+        "android_client_info": {
+          "package_name": "com.company.eazy_eats123"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAg_C6KENxG70VgloR5aqMDP7rWLrPioIw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

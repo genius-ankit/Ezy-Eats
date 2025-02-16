@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "EzyEats",
-    "slug": "EzyEats",
+    "name": "EazyEats",
+    "slug": "eazy-eats",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ezyeats.app"
+      "bundleIdentifier": "com.eazyeats.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.ezyeats.app",
+      "package": "com.eazyeats.app",
       "permissions": [
         "CAMERA"
       ]
