@@ -1,0 +1,74 @@
+{
+  "cli": {
+    "version": ">= 5.4.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development",
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug",
+        "withoutCredentials": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.dev.example.com"
+      },
+      "resourceClass": "medium"
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "android": {
+        "buildType": "apk"
+      },
+      "resourceClass": "medium"
+    },
+    "production": {
+      "channel": "production",
+      "resourceClass": "medium"
+    },
+    "standalone-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "autoIncrement": true,
+        "withoutCredentials": true
+      },
+      "prebuildCommand": "npx expo-doctor && npx expo install --check",
+      "cache": {
+        "disabled": true
+      },
+      "env": {
+        "GRADLE_OPTS": "-Dorg.gradle.jvmargs='-Xmx4g -XX:+HeapDumpOnOutOfMemoryError'",
+        "NODE_OPTIONS": "--max-old-space-size=8192"
+      },
+      "resourceClass": "medium"
+    },
+    "debug-standalone": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleDebug",
+        "withoutCredentials": true
+      },
+      "cache": {
+        "disabled": true
+      },
+      "env": {
+        "GRADLE_OPTS": "-Dorg.gradle.daemon=false",
+        "NODE_OPTIONS": "--max-old-space-size=4096"
+      },
+      "resourceClass": "medium"
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+} 
